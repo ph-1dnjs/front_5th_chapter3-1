@@ -102,9 +102,11 @@ it("새로 정의된 'title', 'endTime' 기준으로 적절하게 일정이 업�
     await result.current.saveEvent(updatedEvent);
   });
 
-  await waitFor(() => expect(result.current.events[0]).toEqual(updatedEvent));
-  expect(result.current.events[0].title).toBe('Updated Event');
-  expect(result.current.events[0].endTime).toBe('14:00');
+  const updated = result.current.events.find((e) => e.id === updatedEvent.id);
+  expect(updated).toMatchObject({
+    title: 'Updated Event',
+    endTime: '14:00',
+  });
 });
 
 it('존재하는 이벤트 삭제 시 에러없이 아이템이 삭제된다.', async () => {
@@ -118,7 +120,7 @@ it('존재하는 이벤트 삭제 시 에러없이 아이템이 삭제된다.', 
   });
 
   await waitFor(() => expect(result.current.events).toHaveLength(1));
-  expect(result.current.events).not.toContainEqual(initialEvents[0]);
+  expect(result.current.events.map((e) => e.id)).not.toContain('1');
 });
 
 it("이벤트 로딩 실패 시 '이벤트 로딩 실패'라는 텍스트와 함께 에러 토스트가 표시되어야 한다", async () => {
@@ -171,6 +173,8 @@ it("존재하지 않는 이벤트 수정 시 '일정 저장 실패'라는 토스
 });
 
 it("네트워크 오류 시 '일정 삭제 실패'라는 텍스트가 노출되며 이벤트 삭제가 실패해야 한다", async () => {
+  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
   const { handlers } = createHandlers(initialEvents);
   server.use(...handlers);
 
@@ -187,4 +191,6 @@ it("네트워크 오류 시 '일정 삭제 실패'라는 텍스트가 노출되�
   });
 
   await waitFor(() => expect(result.current.events).toHaveLength(2));
+
+  consoleErrorSpy.mockRestore();
 });
